@@ -1,4 +1,4 @@
-from rh_rtjj import __version__
+from rtjj import __version__
 
 
 def test_version():

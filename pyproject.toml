@@ -1,15 +1,27 @@
 [tool.poetry]
-name = "rh-rtjj"
+name = "rtjj"
 version = "0.1.0"
-description = ""
+description = "Tools to create and check Jenkins jobs."
+license = "GPL-3.0-only"
 authors = ["Sofer Athlan-Guyot <chemtov@mailbox.org>"]
+readme = "README.md"
+keywords = ["Jenkins", "CI"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+argparse = "^1.4.0"
+python-jenkins = "1.8.0.0a0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+pytest-mock = "^3.5.1"
+
+[tool.poetry.scripts]
+rtjj-check = 'rtjj.check:main'
+rtjj-create = 'rtjj.create:main'
+rtjj-list = 'rtjj.list:main'
 
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
