@@ -17,7 +17,6 @@ class Config(object):
         parser.add_argument("csv_results", nargs='?',
                             type=argparse.FileType('w'),
                             default=sys.stdout)
-        parser.add_argument("--history", action='store_true')
         if args is None:
             args = sys.argv[1:]
         self.args = parser.parse_args(args)
@@ -31,18 +30,6 @@ class Check(object):
             self.checker = Jenkins.BuildInfo
         self.initial_fieldnames = ['start', 'desc', 'url', 'status', 'failure_stage']
         self.fieldnames = ['start', 'desc', 'url', 'status', 'failure_stage']
-
-    def build_history(self, build, result):
-        history = build.history
-        cpt = 0
-        while cpt < 10:
-            if cpt < len(history):
-                history_str = f"{history[cpt]['number']}|{history[cpt]['date']}|{history[cpt]['status']}|{history[cpt]['failure_stage']}"
-                result[f'history_{cpt}'] = history_str
-                self.fieldnames.append(f'history_{cpt}')
-                cpt += 1
-            else:
-                break
 
     @functools.cached_property
     def results(self):

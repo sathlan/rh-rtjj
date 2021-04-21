@@ -16,9 +16,14 @@ class Config(object):
         parser.add_argument("--pattern", action='append', default=[])
         parser.add_argument("--exclude", action='append', default=[])
         parser.add_argument("--include", action='append', default=[])
+        parser.add_argument("output", nargs='?',
+                            type=argparse.FileType('w'),
+                            default=sys.stdout)
         parser.add_argument("--entry")
         parser.add_argument("--conf")
         parser.add_argument("--server")
+        parser.add_argument("--history", action='store_true')
+        parser.add_argument("--history-length", default=10)
         if args is None:
             args = sys.argv[1:]
         self.args = parser.parse_args(args)
@@ -29,11 +34,15 @@ class Config(object):
 
 
 class List(object):
-    def __init__(self, config, viewer=None):
+    def __init__(self, config, viewer=None, builder=None):
         self.config = config.args
         self.viewer = viewer
+        self.builder = builder
         if viewer is None:
             self.viewer = Jenkins.JobsInfo
+        if builder is None:
+            self.builder = Jenkins.BuildInfo
+        self.fieldnames = ['start', 'desc', 'url', 'status', 'failure_stage']
 
     def filter(self, direction, regexp, jobs):
         fjobs = {}
@@ -64,6 +73,31 @@ class List(object):
             jobs = self.filter('exclude', re.compile(exc), jobs)
         return jobs
 
-    def short(self):
-        for name, url in self.jobs.items():
-            print(f"{url}")
+    def build_history(self, url):
+        history = self.builder(url=url).history
+        cpt = 0
+        while cpt < int(self.config.history_length):
+            if cpt < len(history):
+                yield {
+                    'start': history[cpt]['date'],
+                    'desc': '',
+                    'url': history[cpt]['url'],
+                    'status': history[cpt]['status'],
+                    'failure_stage': history[cpt]['failure_stage'],
+                }
+                cpt += 1
+            else:
+                break
+
+    def main(self):
+        if not self.config.history:
+            for name, url in self.jobs.items():
+                print(f"{url}")
+        else:
+            csv_output = csv.DictWriter(
+                self.config.output,
+                fieldnames=self.fieldnames)
+            csv_output.writeheader()
+            for _, url in self.jobs.items():
+                for result in self.build_history(url):
+                    csv_output.writerow(result)

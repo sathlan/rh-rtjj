@@ -2,6 +2,7 @@ from urllib.parse import urlparse
 import datetime
 import functools
 import os
+import re
 from time import sleep
 from pathlib import Path
 
@@ -29,7 +30,11 @@ class BuildInfo(object):
 
     @functools.cached_property
     def job_name(self):
-        self.job_name = Path(self.purl.path).parent.stem
+        match = re.search(r'/\d+/?', self.purl.path)
+        if match:
+            self.job_name = Path(self.purl.path).parent.stem
+        else:
+            self.job_name = Path(self.purl.path).stem
         return self.job_name
 
     @functools.cached_property
