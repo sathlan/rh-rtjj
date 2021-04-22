@@ -152,9 +152,12 @@ class Create(object):
             fieldnames=self.fieldnames)
         if not self.config.no_header:
             csv_output.writeheader()
+        desc = self.config.jobs
+        if self.config.desc is not None:
+            desc = self.config.desc
         for url in self.urls:
             csv_output.writerow({
                 'start': dt.datetime.now().strftime(self.fmt_time),
-                'desc': self.config.desc,
+                'desc': desc,
                 'url': url,
             })
