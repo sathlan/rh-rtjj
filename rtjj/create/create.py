@@ -69,7 +69,7 @@ class Create(object):
     @functools.cached_property
     def params(self):
         params = {}
-        if self.config.conf is not None:
+        if self.config.conf is not None and len(self.config.job) == 0:
             config = self.config_parser
             config.read(self.config.conf)
             for section in ['DEFAULT', self.config.server, self.config.jobs]:
