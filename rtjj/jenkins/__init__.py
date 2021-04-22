@@ -157,7 +157,7 @@ class JobsInfo(object):
         self.server_url = f"{self.purl.scheme}://{self.purl.netloc}"
         self.server = jenkins.Jenkins(self.server_url)
 
-    @property
+    @functools.cached_property
     def jobs(self):
         jobs = []
         if self.view is not None:
