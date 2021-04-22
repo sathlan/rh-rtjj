@@ -40,8 +40,6 @@ class Check(object):
             result = {}
             for field in self.initial_fieldnames:
                 result[field] = getattr(build, field)
-            if self.config.history:
-                self.build_history(build, result)
             self.results.append(result)
         return self.results
 

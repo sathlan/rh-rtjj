@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 import argparse
 import configparser
 import csv
@@ -13,11 +14,11 @@ class Config(object):
         parser = argparse.ArgumentParser(
             "Create a Jenkins job and output the url of the triggered job.")
 
-        parser.add_argument("--job")
-        parser.add_argument("--jobs")
-        parser.add_argument("--param", action='append', default=[])
+        parser.add_argument("--job", action='append', default=[])
         parser.add_argument("--server")
+        parser.add_argument("--param", action='append', default=[])
         parser.add_argument("--auth", default=None)
+        parser.add_argument("--jobs")
         parser.add_argument("--conf", default=None)
         parser.add_argument("--no-header", action='store_true')
         parser.add_argument("--desc", default='')
@@ -35,43 +36,74 @@ class Create(object):
         self.fmt_time = "%Y-%m-%dT%H:%M:%S.%f%z"
         self.fieldnames = ['start', 'desc', 'url']
         self.urls = []
+        self._server = None
+        self._jobs = []
+        self.config_parser = configparser.ConfigParser()
+        self.config_parser.optionxform = str
+        self._auth_file = None
 
+    @property
     def jobs(self):
-        self.jobs = []
-        if self.config.conf is None:
-            raise(Exception("You need to pass the configuration to use jobs"))
-        config = configparser.ConfigParser()
-        config.read(self.config.conf)
-        if 'jobs' not in config:
-            raise(Exception("You need to define a [jobs] section in the conf"))
-        if self.config.jobs not in config['jobs']:
-            raise(Exception(f"{self.config.jobs} doesn't exist in the configuration"))
-        for job in config['jobs'][self.config.jobs].splitlines(False):
-            self.jobs.append(job)
-
-        return self.jobs
+        if self._jobs:
+            return self._jobs
+        jobs = []
+        if self.config.job:
+            self._jobs = self.config.job
+            return self._jobs
+        job_section = self.config.jobs
+        if job_section is not None:
+            if self.config.conf is None:
+                raise(Exception(
+                    "You need to pass the configuration to use jobs"))
+            config = self.config_parser
+            config.read(self.config.conf)
+            if job_section not in config:
+                raise(Exception(
+                    f"You need to define a [{job_section}] section in the conf"))
+        return jobs
 
     @functools.cached_property
     def params(self):
         params = {}
         if self.config.conf is not None:
-            config = configparser.ConfigParser()
+            config = self.config_parser
             config.read(self.config.conf)
-            for section in ['DEFAULT', self.config.server]:
-                if section in config:
+            for section in ['DEFAULT', self.config.server, self.config.jobs]:
+                if section is not None and section in config:
                     params.update(config[section])
+            if 'urls' in params:
+                for url in params['urls'].splitlines(False):
+                    self._jobs.append(url)
+                # Assume all jobs are on the same server.
+                job_url = urlparse(self._jobs[-1])
+                if job_url.scheme != '':
+                    self._server = f"{self.purl.scheme}://{self.purl.netloc}"
+                params.pop('urls')
+            if 'server' in params:
+                server_section = params.pop('server')
+                if server_section in config:
+                    params.update(config[server_section])
+            # TODO: unused
+            if 'alias' in params:
+                params.pop('alias')
+            if 'server_url' in params:
+                self._server = params.pop('server_url')
+            if 'auth' in params:
+                self._auth_file = params.pop('auth')
         for cli_param in self.config.param:
             (key, value) = cli_param.split('=')
             params[key] = value
         return params
 
+    @property
     def auth(self):
-        auth = {}
         auth_file = None
-        if 'auth' in self.params:
-            auth_file = self.params.pop('auth')
+        if self._auth_file is not None:
+            auth_file = self._auth_file
+        # Command line wins
         if self.config.auth is not None:
             auth_file = self.config.auth
+        auth = {}
         if auth_file is not None:
             with open(auth_file, 'r') as perm:
                 for line in perm:
@@ -82,23 +114,26 @@ class Create(object):
 
     @property
     def server(self):
-        server = self.config.server
-        if 'url' in self.params:
-            server = self.params.pop('url')
-        return server
+        if self._server is None:
+            server = None
+            if self.config.server is not None:
+                server = self.config.server
+            else:
+                raise(Exception("Cannot find the server url."))
+            return server
+        else:
+            # Make sure to remove it anyway.
+            if 'server_url' in self.params:
+                server = self.params.pop('server_url')
+            return self._server
 
     def trigger(self):
-        jobs = []
-        if self.config.jobs is None:
-            jobs.append(self.config.job)
-        else:
-            jobs = self.jobs()
-
-        for job in jobs:
+        params = self.params
+        for job in self.jobs:
             url = self.builder(server=self.server,
                                job=job,
-                               auth=self.auth(),
-                               params=self.params).trigger()
+                               auth=self.auth,
+                               params=params).trigger()
             self.urls.append(url)
 
         if len(self.urls) == 1:
