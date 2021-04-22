@@ -8,10 +8,11 @@ from pathlib import Path
 
 import jenkins
 
+os.environ['REQUESTS_CA_BUNDLE'] = '/etc/pki/tls/cert.pem'
+
 
 class BuildInfo(object):
     def __init__(self, start='', desc='', url='', status=None):
-        os.environ['REQUESTS_CA_BUNDLE'] = '/etc/pki/tls/cert.pem'
         self.start = start
         self.desc = desc
         self.url = url
