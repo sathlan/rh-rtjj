@@ -1,3 +1,6 @@
+from urllib.parse import urlparse, urljoin
+from pathlib import Path
+import configparser
 import argparse
 import csv
 import functools
@@ -19,7 +22,10 @@ class Config(object):
         parser.add_argument("--exclude", action='append', default=[])
         parser.add_argument("--include", action='append', default=[])
         parser.add_argument("--entry")
-        parser.add_argument("--conf")
+        parser.add_argument(
+            "--conf",
+            default=Path('~/.config/rtjj/conf.ini').expanduser()
+        )
         parser.add_argument("--history", action='store_true')
         parser.add_argument("--history-length", default=10)
         parser.add_argument("output", nargs='?',
@@ -57,10 +63,40 @@ class List(object):
                     fjobs.update({name: url})
         return fjobs
 
+    def build_jobs_from_conf(self, entry):
+        config = configparser.ConfigParser()
+        config.optionxform = str
+        config_file = Path(self.config.conf).expanduser()
+        config.read(config_file)
+        if entry not in config:
+            raise(Exception("Cannot find {entry} in {config_file}."))
+        urls_config = config[entry]['urls']
+        server = ''
+        if 'server' in config[entry]:
+            server_entry = config[entry]['server']
+            if server_entry in config:
+                server = config[server_entry]['server_url']
+        urls = []
+        for url in urls_config.splitlines(False):
+            urls.append(url)
+        job_url = urlparse(urls[-1])
+        if job_url.scheme != '':
+            server = f"{job_url.scheme}://{job_url.netloc}"
+        jobs = {}
+        for url in urls:
+            purl = urlparse(url)
+            jobs[purl.path] = urljoin(server, purl.path)
+        return jobs
+
     @functools.cached_property
     def jobs(self):
         jobs = {}
-
+        if 'list' in self.config.view:
+            for view in self.viewer(url=self.config.server).views:
+                jobs[view['name']] = view['url']
+            return jobs
+        if self.config.entry is not None:
+            return self.build_jobs_from_conf(self.config.entry)
         for view in self.config.view:
             for job in self.viewer(view=view,
                                    url=self.config.server).jobs:
@@ -79,11 +115,14 @@ class List(object):
         history = self.builder(url=url).history
         cpt = 0
         results = []
+        desc = ''
+        if self.config.entry is not None:
+            desc = self.config.entry
         while cpt < int(self.config.history_length):
             if cpt < len(history):
                 results.append({
                     'start': history[cpt]['date'],
-                    'desc': '',
+                    'desc': desc,
                     'url': history[cpt]['url'],
                     'status': history[cpt]['status'],
                     'failure_stage': history[cpt]['failure_stage'],
