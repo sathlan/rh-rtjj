@@ -55,18 +55,18 @@ def test_list_history(mocker, capsys):
     jenkins_view_results = [
         {
             'fullname': 'foobar1',
-            'url': 'https://myjenkins.com/foobar1'
+            'url': 'https://myjenkins.com/foo.bar1'
         }]
     jenkins_build_results = [
         {
             'date': '2021',
-            'url': 'https://myjenkins.com/foobar1/8',
+            'url': 'https://myjenkins.com/foo.bar1/8',
             'status': 'SUCCESS',
             'failure_stage': '',
         },
         {
             'date': '2021',
-            'url': 'https://myjenkins.com/foobar1/9',
+            'url': 'https://myjenkins.com/foo.bar1/9',
             'status': 'FAILURE',
             'failure_stage': 'stage1',
         }]
@@ -77,6 +77,6 @@ def test_list_history(mocker, capsys):
     List(config, viewer=viewer, builder=builder).main()
     view = capsys.readouterr()
     output = 'start,desc,url,status,failure_stage\r\n' + \
-        '2021,,https://myjenkins.com/foobar1/8,SUCCESS,\r\n' + \
-        '2021,,https://myjenkins.com/foobar1/9,FAILURE,stage1\r\n'
+        '2021,,https://myjenkins.com/foo.bar1/8,SUCCESS,\r\n' + \
+        '2021,,https://myjenkins.com/foo.bar1/9,FAILURE,stage1\r\n'
     assert view.out == output

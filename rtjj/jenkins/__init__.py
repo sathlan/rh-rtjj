@@ -30,17 +30,11 @@ class BuildInfo(object):
 
     @functools.cached_property
     def job_name(self):
-        match = re.search(r'/\d+/?', self.purl.path)
-        if match:
-            self.job_name = Path(self.purl.path).parent.stem
-        else:
-            self.job_name = Path(self.purl.path).stem
-        return self.job_name
+        return self.parse_job_name(self.purl.path)
 
     @functools.cached_property
     def number(self):
-        self.number = int(Path(self.purl.path).stem)
-        return self.number
+        return self.parse_job_number(self.purl.path)
 
     @functools.cached_property
     def status(self):
@@ -67,14 +61,35 @@ class BuildInfo(object):
                     return stage['name']
         return stage
 
+    @staticmethod
+    def parse_job_name(path):
+        job_name = ''
+        match = re.search(r'/\d+/?$', path)
+        if match:
+            m_name = re.match(r'^(?:.*/)?([^/]+)/?$',
+                              str(Path(path).parent))
+            job_name = m_name.group(1)
+        else:
+            m_name = re.match(r'^(?:.*/)?([^/]+)/?$', path)
+            job_name = m_name.group(1)
+        return job_name
+
+    @staticmethod
+    def parse_job_number(path):
+        match = re.search(r'^.*/(\d+)/?$', path)
+        if match:
+            return int(match.group(1))
+        else:
+            return None
+
     @property
     def history(self):
         builds_hist = []
         builds = self.server.get_job_info(self.job_name)['builds']
         for build in builds:
             url = build['url']
-            job_name = Path(url).parent.stem
-            number = int(Path(url).stem)
+            job_name = self.parse_job_name(url)
+            number = self.parse_job_number(url)
             old_build = self.server.get_build_info(
                 job_name,
                 number)
