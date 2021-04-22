@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rtjj"
-version = "0.1.0"
+version = "0.2.0"
 description = "Tools to create and check Jenkins jobs."
 license = "GPL-3.0-only"
 authors = ["Sofer Athlan-Guyot <chemtov@mailbox.org>"]
