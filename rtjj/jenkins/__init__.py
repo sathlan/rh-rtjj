@@ -40,6 +40,8 @@ class BuildInfo(object):
     def status(self):
         if self._status is None:
             self._status = self.build['result']
+            if self.build['building']:
+                self._status = 'RUNNING'
         return self._status
 
     @functools.cached_property
@@ -49,13 +51,12 @@ class BuildInfo(object):
             self.number)['stages']
         return self.stages
 
-    def has_failed(self):
-        return self.status == 'FAILURE'
-
     @functools.cached_property
     def failure_stage(self):
         stage = None
-        if self.has_failed():
+
+        if self.status == 'FAILURE' or self.status == 'RUNNING':
+            stage = 'Not_started'
             for stage in self.stages:
                 if stage['status'] == 'FAILED':
                     return stage['name']
@@ -94,12 +95,14 @@ class BuildInfo(object):
                 job_name,
                 number)
             result = old_build['result']
-            stages = self.server.get_build_stages(
-                job_name,
-                number)['stages']
-
+            if old_build['building']:
+                result = 'RUNNING'
             failure_stage = ''
-            if result == 'FAILURE':
+            if result == 'FAILURE' or result == 'RUNNING':
+                stages = self.server.get_build_stages(
+                    job_name,
+                    number)['stages']
+                failure_stage = 'Not_started'
                 for stage in stages:
                     if stage['status'] == 'FAILED':
                         failure_stage = stage['name']
