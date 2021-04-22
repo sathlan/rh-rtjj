@@ -20,7 +20,10 @@ class Config(object):
         parser.add_argument("--param", action='append', default=[])
         parser.add_argument("--auth", default=None)
         parser.add_argument("--jobs")
-        parser.add_argument("--conf", default=None)
+        parser.add_argument(
+            "--conf",
+            default=Path('~/.config/rtjj/conf.ini').expanduser()
+        )
         parser.add_argument("--no-header", action='store_true')
         parser.add_argument("--desc", default='')
         if args is None:
@@ -53,9 +56,9 @@ class Create(object):
             return self._jobs
         job_section = self.config.jobs
         if job_section is not None:
-            if self.config.conf is None:
+            if not Path(self.config.conf).exists():
                 raise(Exception(
-                    "You need to pass the configuration to use jobs"))
+                    "Cannot find {self.config.conf} and 'jobs' was used."))
             config = self.config_parser
             config.read(Path(self.config.conf).expanduser())
             if job_section not in config:
