@@ -167,3 +167,7 @@ class JobsInfo(object):
             for job in self.server.get_job_info_regex(self.pattern):
                 jobs.append(job)
         return jobs
+
+    @functools.cached_property
+    def views(self):
+        return self.server.get_views()
