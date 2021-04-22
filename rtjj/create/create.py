@@ -1,4 +1,5 @@
 from urllib.parse import urlparse
+from pathlib import Path
 import argparse
 import configparser
 import csv
@@ -56,7 +57,7 @@ class Create(object):
                 raise(Exception(
                     "You need to pass the configuration to use jobs"))
             config = self.config_parser
-            config.read(self.config.conf)
+            config.read(Path(self.config.conf).expanduser())
             if job_section not in config:
                 raise(Exception(
                     f"You need to define a [{job_section}] section in the conf"))
@@ -105,7 +106,7 @@ class Create(object):
             auth_file = self.config.auth
         auth = {}
         if auth_file is not None:
-            with open(auth_file, 'r') as perm:
+            with open(Path(auth_file).expanduser(), 'r') as perm:
                 for line in perm:
                     (username, password) = line.strip().split(':')
                     auth['username'] = username
