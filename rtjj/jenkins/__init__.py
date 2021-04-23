@@ -54,14 +54,16 @@ class BuildInfo(object):
 
     @functools.cached_property
     def failure_stage(self):
-        stage = None
+        current_stage = None
 
         if self.status == 'FAILURE' or self.status == 'RUNNING':
-            stage = 'Not_started'
+            current_stage = 'Not_started'
             for stage in self.stages:
                 if stage['status'] == 'FAILED':
                     return stage['name']
-        return stage
+                else:
+                    current_stage = stage['name']
+        return current_stage
 
     @staticmethod
     def parse_job_name(path):
