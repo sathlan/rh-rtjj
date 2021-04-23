@@ -25,7 +25,7 @@ class Config(object):
             default=Path('~/.config/rtjj/conf.ini').expanduser()
         )
         parser.add_argument("--no-header", action='store_true')
-        parser.add_argument("--desc", default='')
+        parser.add_argument("--desc", default=None)
         if args is None:
             args = sys.argv[1:]
         self.args = parser.parse_args(args)
