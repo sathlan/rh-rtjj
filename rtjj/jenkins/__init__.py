@@ -12,7 +12,9 @@ os.environ['REQUESTS_CA_BUNDLE'] = '/etc/pki/tls/cert.pem'
 
 
 class BuildInfo(object):
-    def __init__(self, start='', desc='', url='', status=None):
+    def __init__(self, start='', desc='', url='', status=None, failure_stage=None):
+        # failure is ignore, but enable to pipe the result of history
+        # into the check command.
         self.start = start
         self.desc = desc
         self.url = url
