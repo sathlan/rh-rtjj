@@ -73,7 +73,7 @@ def test_list_history(mocker, capsys):
     viewer = Jenkins.JobsInfo
     viewer.jobs = mocker.PropertyMock(return_value=jenkins_view_results)
     builder = Jenkins.BuildInfo
-    builder.history = mocker.PropertyMock(return_value=jenkins_build_results)
+    builder.history = mocker.Mock(return_value=jenkins_build_results)
     List(config, viewer=viewer, builder=builder).main()
     view = capsys.readouterr()
     output = 'start,desc,url,status,failure_stage\r\n' + \

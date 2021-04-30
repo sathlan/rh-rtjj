@@ -88,11 +88,12 @@ class BuildInfo(object):
         else:
             return None
 
-    @property
-    def history(self):
+    def history(self, length=5):
         builds_hist = []
         builds = self.server.get_job_info(self.job_name)['builds']
-        for build in builds:
+        for idx, build in enumerate(builds):
+            if idx >= int(length):
+                break
             url = build['url']
             job_name = self.parse_job_name(url)
             number = self.parse_job_number(url)
@@ -112,7 +113,6 @@ class BuildInfo(object):
                     if stage['status'] == 'FAILED':
                         failure_stage = stage['name']
                         break
-
             builds_hist.append({
                 'url': url,
                 'date': datetime.datetime.fromtimestamp(int(

@@ -1,11 +1,11 @@
-from urllib.parse import urlparse, urljoin
-from pathlib import Path
-import configparser
 import argparse
+import configparser
 import csv
 import functools
 import re
 import sys
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
 
 import rtjj.jenkins as Jenkins
 
@@ -112,24 +112,19 @@ class List(object):
         return jobs
 
     def build_history(self, url):
-        history = self.builder(url=url).history
-        cpt = 0
+        builds = self.builder(url=url).history(self.config.history_length)
         results = []
         desc = ''
         if self.config.entry is not None:
             desc = self.config.entry
-        while cpt < int(self.config.history_length):
-            if cpt < len(history):
-                results.append({
-                    'start': history[cpt]['date'],
-                    'desc': desc,
-                    'url': history[cpt]['url'],
-                    'status': history[cpt]['status'],
-                    'failure_stage': history[cpt]['failure_stage'],
-                })
-                cpt += 1
-            else:
-                break
+        for build in builds:
+            results.append({
+                'start': build['date'],
+                'desc': desc,
+                'url': build['url'],
+                'status': build['status'],
+                'failure_stage': build['failure_stage'],
+            })
         return results
 
     def my_print(self, msg):
