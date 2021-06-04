@@ -1,0 +1,88 @@
+* Ideas/Fixes
+
+  
+** TODO Make a better job at capturing error.
+
+   #+begin_example
+     File "/home/chem/.local/pipx/venvs/rtjj/lib64/python3.8/site-packages/rtjj/jenkins/__init__.py", line 29, in build
+       self.build = self.server.get_build_info(
+
+     File "/home/chem/.local/pipx/venvs/rtjj/lib64/python3.8/site-packages/jenkins/__init__.py", line 660, in get_build_info
+             raise JenkinsException('job[%s] number[%s] does not exist'
+        jenkins.JenkinsException: job[DFG-upgrades-updates-13-from-z5-composable-ipv6] number[73] does not exist
+   #+end_example
+
+** TODO Refactor the jenkins classes.
+   :LOGBOOK:
+   CLOCK: [2021-04-29 Thu 17:54]--[2021-04-29 Thu 19:26] =>  1:32
+   :END:
+
+   The current jenkins interface is convoluted.
+
+   For instance using server url should be consistant, currently
+   sometime it get it from the jobs url sometime not.
+
+   The objects must be cleaner:
+   - JenkinsServer:
+     - has a url
+     - has python-jenkins interface
+     - can list job based on filters, return a list of Job
+     - can be created from an url 
+   - Job:
+     - has an name
+     - has a JenkinsServer
+     - has an url
+     - can list builds and return a list of Build
+     - can trigger a build which returns a Build
+     - can be created from an url 
+   - Build:
+     - has a number
+     - has a date
+     - has a status: RUNNING, SUCCESS, FAILED, UNSTABLE
+     - has an url
+     - has parameters
+     - belongs to a Job
+     - can list its stages and return a list of Stage
+     - can be created from an Build url, just create an object representing an existing build
+     - can trigger a rebuild (same parameters) and return a Build.
+   - Stage:
+     - has a name;
+     - has a date;
+     - has a status: FAILURE, SUCCESS
+     - has a log url
+     - belongs to a Build
+
+   Then create, list, check object have the "interface":
+     - they parse input;
+     - they deliver output;
+
+   Having the clean interface to jenkins would help getting the Thread
+   wrapper easily, see [[*Wrap build creation into thread.][Wrap build creation into thread.]]
+
+** TODO Wrap build creation into thread.
+
+   This would speed up massive trigger:
+
+   [[https://docs.python.org/3/library/concurrent.futures.html][concurrent.futures — Launching parallel tasks — Python 3.9.4 documentation]]
+
+   #+begin_src python
+     # This would be called from "create.py".
+     jobs = []
+     for url in urls:
+         jobs.append(Job(url))
+     with ThreadPoolExecutor(max_workers=4) as e:
+         # even better syntax:
+         # future_to_url = {executor.submit(load_url, url, 60): url for url in URLS}
+         # return a dict of <exec id>: url
+         # see https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor-example
+         for job in jobs:
+             e.submit(job.trigger, params)
+         for future in concurrent.futures.as_completed(future_to_url):
+
+   #+end_src
+
+   
+** BUG: if conf.ini has a default server_url it override the one passed on the cli.
+
+   This whole configuration getting is a mess, better objects should
+   help here as well.
